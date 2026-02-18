@@ -32,14 +32,43 @@ class PanelClient:
         return r.json()
 
     def create_client(self, server_id: int, name: str):
-        url = f"{self.base_url}/api/clients"
-        r = requests.post(url, json={"server_id": server_id, "name": name},
-                        headers=self._headers(), timeout=self.timeout)
+        url = f"{self.base_url}/api/clients/create"
+        r = requests.post(
+            url,
+            json={"server_id": server_id, "name": name},
+            headers=self._headers(),
+            timeout=self.timeout,
+        )
         r.raise_for_status()
         return r.json()
 
-    def get_client_config(self, client_id: int):
-        url = f"{self.base_url}/api/clients/{client_id}/config"
+    def get_client_config_text(self, client_id: int) -> str:
+        url = f"{self.base_url}/api/clients/{client_id}/details"
         r = requests.get(url, headers=self._headers(), timeout=self.timeout)
         r.raise_for_status()
+        data = r.json()
+        return data["client"]["config"]
+    
+    def iter_servers(self):
+        data = self.get_servers()
+        return data.get("servers", []) if isinstance(data, dict) else []
+    
+    def list_clients_by_server(self, server_id: int):
+        url = f"{self.base_url}/api/clients"
+        r = requests.get(url, params={"server_id": server_id}, headers=self._headers(), timeout=self.timeout)
+        r.raise_for_status()
         return r.json()
+
+    def find_client_by_name_any_server(self, name: str) -> dict | None:
+        for s in self.iter_servers():
+            sid = s.get("id")
+            if not sid:
+                continue
+            data = self.list_clients_by_server(int(sid))
+            clients = data.get("clients", []) if isinstance(data, dict) else []
+            for c in clients:
+                if isinstance(c, dict) and c.get("name") == name:
+                    return {"server": s, "client": c}
+        return None
+
+
