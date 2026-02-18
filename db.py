@@ -6,6 +6,7 @@ from psycopg.rows import dict_row
 
 # Всегда читаем .env рядом с bot.py и перезаписываем env vars
 load_dotenv(dotenv_path=Path(__file__).with_name(".env"), override=True)
+
 DB_DSN = os.environ["BOT_DB_DSN"]
 
 def get_conn():
