@@ -2,12 +2,18 @@ import io
 
 from telegram import Update
 from telegram.ext import ContextTypes
-from app.bot.middleware import tg_error_guard
+from app.bot.middleware import tg_error_guard, private_only, with_effective_role, Role
 from app.services.panel_utils import pick_server
 
-
+@private_only
+@with_effective_role
 @tg_error_guard
 async def request_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    role = context.user_data["role"]
+    if role == Role.NO_ACCESS:
+        await update.message.reply_text("Нет доступа. Нужно быть в клубном чате или получить инвайт.")
+        return
+    
     panel = context.application.bot_data["panel"]
     tg_id = update.effective_user.id
     tg_username = update.effective_user.username or "no_username"

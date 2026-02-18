@@ -1,10 +1,17 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from app.bot.middleware import tg_error_guard
+from app.bot.middleware import tg_error_guard, private_only, with_effective_role, Role
 
+@private_only
+@with_effective_role
 @tg_error_guard
 async def servers(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    role = context.user_data["role"]
+    if role == Role.NO_ACCESS:
+        await update.message.reply_text("Нет доступа. Нужно быть в клубном чате или получить инвайт.")
+        return
+    
     panel = context.application.bot_data["panel"]
     data = panel.get_servers()
     items = data.get("servers", [])

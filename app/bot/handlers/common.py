@@ -1,12 +1,16 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from app.bot.middleware import tg_error_guard
+from app.bot.middleware import tg_error_guard, private_only, with_effective_role, Role
 
-
+@private_only
+@with_effective_role
 @tg_error_guard
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # print("CHAT_ID =", update.effective_chat.id, "CHAT_TYPE =", update.effective_chat.type)
+    role = context.user_data["role"]
+    if role == Role.NO_ACCESS:
+        await update.message.reply_text("Нет доступа. Нужно быть в клубном чате или получить инвайт.")
+        return
 
     await update.message.reply_text(
         "Команды:\n"
@@ -17,8 +21,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/my_id — узнать свой Telegram ID и username\n"
     )
 
+@private_only
+@with_effective_role
 @tg_error_guard
 async def health(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    role = context.user_data["role"]
+    if role == Role.NO_ACCESS:
+        await update.message.reply_text("Нет доступа. Нужно быть в клубном чате или получить инвайт.")
+        return
+    
     panel = context.application.bot_data["panel"]
     hc = panel.healthcheck()
 
@@ -41,15 +52,29 @@ async def health(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text("\n".join(lines))
 
+@private_only
+@with_effective_role
 @tg_error_guard
 async def my_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    role = context.user_data["role"]
+    if role == Role.NO_ACCESS:
+        await update.message.reply_text("Нет доступа. Нужно быть в клубном чате или получить инвайт.")
+        return
+    
     u = update.effective_user
     await update.message.reply_text(
         f"tg_id={u.id}\nusername=@{u.username}\nname={u.full_name}"
     )
 
+@private_only
+@with_effective_role
 @tg_error_guard
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    role = context.user_data["role"]
+    if role == Role.NO_ACCESS:
+        await update.message.reply_text("Нет доступа. Нужно быть в клубном чате или получить инвайт.")
+        return
+    
     panel = context.application.bot_data["panel"]
     tg_id = update.effective_user.id
     tg_username = update.effective_user.username or "no_username"
