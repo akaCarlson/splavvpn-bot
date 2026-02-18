@@ -4,8 +4,9 @@ from enum import Enum
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from app.services.access import is_chat_member
-from app.db.repo_users import get_user
+#from app.services.access import is_chat_member
+#from app.db.repo_users import get_user
+from app.services.access import get_effective_role, Role
 
 class Role(str, Enum):
     ADMIN = "ADMIN"
@@ -42,27 +43,27 @@ def private_only(fn):
     @functools.wraps(fn)
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if update.effective_chat and update.effective_chat.type != "private":
-            return  # FR-01: игнорим группы/каналы
+            return
         return await fn(update, context)
     return wrapper
 
-def with_effective_role(fn):
+def with_role(fn):
     @functools.wraps(fn)
     async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
-        cfg = context.application.bot_data["cfg"]
-        tg_id = update.effective_user.id
-
-        # ADMIN/MODERATOR по спискам
-        if tg_id in cfg.ADMIN_TG_IDS:
-            role = Role.ADMIN
-        else:
-            # chat membership
-            if await is_chat_member(context, tg_id):
-                role = Role.CHAT_MEMBER
-            else:
-                # пока простая заглушка: если есть в БД — NO_ACCESS (позже BILLING_MEMBER/INVITED_GUEST)
-                role = Role.NO_ACCESS
-
+        role, extra = await get_effective_role(context, update.effective_user.id)
         context.user_data["role"] = role
+        context.user_data.update(extra)
         return await fn(update, context)
     return wrapper
+
+def require_roles(*allowed: Role):
+    def deco(fn):
+        @functools.wraps(fn)
+        async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
+            role = context.user_data.get("role", Role.NO_ACCESS)
+            if role not in allowed:
+                await update.message.reply_text("Нет доступа. Нужен доступ через клубный чат или инвайт.")
+                return
+            return await fn(update, context)
+        return wrapper
+    return deco

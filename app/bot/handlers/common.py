@@ -1,16 +1,17 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from app.bot.middleware import tg_error_guard, private_only, with_effective_role, Role
+from app.bot.middleware import require_roles, tg_error_guard, private_only, with_role, Role
 
-@private_only
-@with_effective_role
 @tg_error_guard
+@private_only
+@with_role
+@require_roles(Role.ADMIN, Role.MODERATOR, Role.CHAT_MEMBER, Role.BILLING_MEMBER, Role.INVITED_GUEST)
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    role = context.user_data["role"]
+    """role = context.user_data["role"]
     if role == Role.NO_ACCESS:
         await update.message.reply_text("Нет доступа. Нужно быть в клубном чате или получить инвайт.")
-        return
+        return"""
 
     await update.message.reply_text(
         "Команды:\n"
@@ -21,9 +22,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/my_id — узнать свой Telegram ID и username\n"
     )
 
-@private_only
-@with_effective_role
 @tg_error_guard
+@private_only
+@with_role
+@require_roles(Role.ADMIN, Role.MODERATOR, Role.CHAT_MEMBER, Role.BILLING_MEMBER, Role.INVITED_GUEST)
 async def health(update: Update, context: ContextTypes.DEFAULT_TYPE):
     role = context.user_data["role"]
     if role == Role.NO_ACCESS:
@@ -52,9 +54,10 @@ async def health(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text("\n".join(lines))
 
-@private_only
-@with_effective_role
 @tg_error_guard
+@private_only
+@with_role
+@require_roles(Role.ADMIN, Role.MODERATOR, Role.CHAT_MEMBER, Role.BILLING_MEMBER, Role.INVITED_GUEST)
 async def my_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     role = context.user_data["role"]
     if role == Role.NO_ACCESS:
@@ -66,9 +69,10 @@ async def my_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"tg_id={u.id}\nusername=@{u.username}\nname={u.full_name}"
     )
 
-@private_only
-@with_effective_role
 @tg_error_guard
+@private_only
+@with_role
+@require_roles(Role.ADMIN, Role.MODERATOR, Role.CHAT_MEMBER, Role.BILLING_MEMBER, Role.INVITED_GUEST)
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     role = context.user_data["role"]
     if role == Role.NO_ACCESS:

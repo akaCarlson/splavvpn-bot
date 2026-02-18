@@ -1,11 +1,12 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from app.bot.middleware import tg_error_guard, private_only, with_effective_role, Role
+from app.bot.middleware import require_roles, tg_error_guard, private_only, with_role, Role
 
-@private_only
-@with_effective_role
 @tg_error_guard
+@private_only
+@with_role
+@require_roles(Role.ADMIN, Role.MODERATOR, Role.CHAT_MEMBER, Role.BILLING_MEMBER, Role.INVITED_GUEST)
 async def servers(update: Update, context: ContextTypes.DEFAULT_TYPE):
     role = context.user_data["role"]
     if role == Role.NO_ACCESS:
