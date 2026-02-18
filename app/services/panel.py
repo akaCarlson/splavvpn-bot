@@ -112,16 +112,6 @@ class PanelClient:
             result["error"] = f"{type(e).__name__}: {e}"
             return result
 
-    def pick_server(servers_json: dict) -> dict | None:
-        items = servers_json.get("servers", []) if isinstance(servers_json, dict) else []
-        if not items:
-            return None
-        # берём первый active, иначе первый
-        for s in items:
-            if isinstance(s, dict) and s.get("status") == "active":
-                return s
-        return items[0] if isinstance(items[0], dict) else None
-
     def iter_servers(self):
         data = self.get_servers()
         return data.get("servers", []) if isinstance(data, dict) else []
