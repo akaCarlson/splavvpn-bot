@@ -3,7 +3,7 @@ from telegram.ext import ContextTypes
 
 from app.bot.middleware import require_roles, tg_error_guard, private_only, with_role, Role
 
-@tg_error_guard
+'''@tg_error_guard
 @private_only
 @with_role
 @require_roles(Role.ADMIN, Role.MODERATOR, Role.CHAT_MEMBER, Role.BILLING_MEMBER, Role.INVITED_GUEST)
@@ -21,7 +21,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/status — статус своего клиента и сервера\n"
         "/my_id — узнать свой Telegram ID и username\n"
     )
-
+'''
 @tg_error_guard
 @private_only
 @with_role
