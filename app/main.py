@@ -1,7 +1,7 @@
 from telegram.ext import Application
 
 from app.config import load_config
-from bot.router import register_handlers
+from app.bot.router import register_handlers
 from app.services.panel import PanelClient
 
 def main():

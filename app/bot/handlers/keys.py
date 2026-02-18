@@ -2,7 +2,7 @@ import io
 
 from telegram import Update
 from telegram.ext import ContextTypes
-from bot.middleware import tg_error_guard
+from app.bot.middleware import tg_error_guard
 from app.services.panel_utils import pick_server
 
 
