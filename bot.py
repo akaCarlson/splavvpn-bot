@@ -60,6 +60,8 @@ async def request_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not client_id:
             await update.message.reply_text(f"Нашёл клиента, но без id: {found['client']}")
             return
+        server_id = found["client"].get("server_id")
+        print(f"Клиент уже есть: client_id={client_id}, name={name}")
         config_text = panel.get_client_config_text(int(client_id))
     else:
         # 2) иначе создаём на первом active сервере
@@ -78,14 +80,14 @@ async def request_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         config_text = client.get("config") or panel.get_client_config_text(int(client_id))
 
-        bio = io.BytesIO(config_text.encode("utf-8"))
-        bio.name = f"{name}.conf"
+    bio = io.BytesIO(config_text.encode("utf-8"))
+    bio.name = f"{name}.conf"
 
-        await update.message.reply_document(
-            document=bio,
-            filename=bio.name,
-            caption=f"Готово ✅ server_id={server_id}, client_id={client_id}",
-        )
+    await update.message.reply_document(
+        document=bio,
+        filename=bio.name,
+        caption=f"Готово ✅ server_id={server_id}, client_id={client_id}",
+    )
 
 def main():
     app = Application.builder().token(BOT_TOKEN).build()

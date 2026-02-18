@@ -44,6 +44,7 @@ class PanelClient:
 
     def get_client_config_text(self, client_id: int) -> str:
         url = f"{self.base_url}/api/clients/{client_id}/details"
+        print(f"Requesting client config for client_id={client_id} with url={url}")
         r = requests.get(url, headers=self._headers(), timeout=self.timeout)
         r.raise_for_status()
         data = r.json()
@@ -54,8 +55,9 @@ class PanelClient:
         return data.get("servers", []) if isinstance(data, dict) else []
     
     def list_clients_by_server(self, server_id: int):
-        url = f"{self.base_url}/api/clients"
-        r = requests.get(url, params={"server_id": server_id}, headers=self._headers(), timeout=self.timeout)
+        url = f"{self.base_url}/api/servers/{server_id}/clients"
+        print(f"Requesting clients for server_id={server_id} with url={url}")
+        r = requests.get(url, headers=self._headers(), timeout=self.timeout)
         r.raise_for_status()
         return r.json()
 
