@@ -129,9 +129,9 @@ async def start_payload(update: Update, context: ContextTypes.DEFAULT_TYPE):
 @with_role
 @require_roles(Role.ADMIN, Role.MODERATOR)
 async def approve_activation_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.args:
+    '''if not context.args:
         await update.message.reply_text("Формат: /approve_activation <id>")
-        return
+        return'''
     #req_id = int(context.args[0])
     raw = (update.message.text or "").strip()
     # поддержка /approve_activation_123 и /approve_activation 123
@@ -170,9 +170,9 @@ async def approve_activation_cmd(update: Update, context: ContextTypes.DEFAULT_T
 @with_role
 @require_roles(Role.ADMIN, Role.MODERATOR)
 async def reject_activation_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.args:
+    '''if not context.args:
         await update.message.reply_text("Формат: /reject_activation <id>")
-        return
+        return'''
     #req_id = int(context.args[0])
     raw = (update.message.text or "").strip()
     if raw.startswith("/reject_activation_"):
@@ -196,3 +196,35 @@ async def reject_activation_cmd(update: Update, context: ContextTypes.DEFAULT_TY
         pass
 
     await update.message.reply_text(f"✅ Rejected. req_id={req_id}")
+
+@tg_error_guard
+@private_only
+@with_role
+@require_roles(Role.CHAT_MEMBER, Role.BILLING_MEMBER, Role.ADMIN, Role.MODERATOR)
+async def request_for_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    expire_invites()
+
+    cfg = context.application.bot_data["cfg"]
+    me = update.effective_user
+    upsert_user(me.id, me.username)
+
+    code = secrets.token_urlsafe(16)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=cfg.INVITE_TTL_DAYS)
+
+    create_invite(
+        code=code,
+        invite_type="GUEST_INVITE",
+        created_by_tg_id=me.id,
+        owner_tg_id=me.id,  # owner = текущий плательщик
+        expires_at_iso=_iso(expires_at),
+    )
+
+    bot_username = (context.bot.username or "").lstrip("@")
+    link = f"https://t.me/{bot_username}?start=guest_{code}" if bot_username else f"/start guest_{code}"
+
+    await update.message.reply_text(
+        "✅ Гостевой инвайт создан.\n"
+        f"⏳ TTL: {cfg.INVITE_TTL_DAYS} дней\n"
+        f"🔗 {link}\n"
+        "После активации пользователь получит роль INVITED_GUEST."
+    )
