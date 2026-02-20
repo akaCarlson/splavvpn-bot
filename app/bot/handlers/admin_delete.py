@@ -44,13 +44,15 @@ async def delete_user_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # 1) удалить профиль в панели, если есть
     prof = get_profile(tg_id)
+    await update.message.reply_text(f"DEBUG profile={prof}")
+
     if prof and prof.get("client_id"):
         client_id = int(prof["client_id"])
         try:
-            panel.delete_client(client_id)
+            resp = panel.delete_client(client_id)
+            await update.message.reply_text(f"🧹 Panel delete OK: client_id={client_id} resp={resp}")
         except Exception as e:
-            # не останавливаем полное удаление — сообщим админу
-            await update.message.reply_text(f"⚠️ Не смог удалить клиента в панели (client_id={client_id}): {type(e).__name__}: {e}")
+            await update.message.reply_text(f"⚠️ Panel delete FAILED: client_id={client_id} err={type(e).__name__}: {e}")
 
     # 2) удалить в БД бота (каскад подчистит связи)
     deleted = delete_user(tg_id)
