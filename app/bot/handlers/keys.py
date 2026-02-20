@@ -92,8 +92,8 @@ async def request_text_cmd(update, context):
     name, cfg_text = await _ensure_and_get_config(update, context)
     safe = html.escape(cfg_text)
     await update.message.reply_text(
-        f"✅ {name}\n<pre>{safe}</pre>\n"
-        "Копируй и вставляй в AmneziaVPN.\n"
+        f"<pre>{safe}</pre>\n"
+        "✅ Копируй и вставляй в AmneziaVPN.\n"
         "Или используй:\n"
         "/request_qr - для получения QR-кода\n"
         "/request_config - для получения конфиг-файла\n"
@@ -111,8 +111,7 @@ async def request_config_cmd(update, context):
     bio = BytesIO(cfg_text.encode("utf-8"))
     bio.name = f"{name}.conf"
     bio.seek(0)
-    await update.message.reply_document(document=bio, caption="✅ Твой конфиг (AmneziaWG)\n"
-                                        "Скачай и импортируй в AmneziaVPN.\n"
+    await update.message.reply_document(document=bio, caption="✅ Скачай и импортируй в AmneziaVPN.\n"
                                         "Или используй:\n"
                                         "/request_qr - для получения QR-кода\n"
                                         "/request_text - для получения текстового ключа\n"
@@ -153,8 +152,7 @@ async def request_qr_cmd(update, context):
     bio.name = f"{name}.png"
     bio.seek(0)
 
-    await update.message.reply_photo(photo=bio, caption=f"✅ {name} — QR для AmneziaVPN\n"
-                                     "Сканируй QR-код через AmneziaVPN.\n"
+    await update.message.reply_photo(photo=bio, caption=f"✅ Сканируй QR-код через AmneziaVPN.\n"
                                      "Или используй:\n"
                                      "/request_config - для получения конфиг-файла\n"
                                      "/request_text - для получения текствого ключа\n"

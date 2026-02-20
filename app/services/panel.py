@@ -160,8 +160,6 @@ class PanelClient:
         head = body[:200]
         raise RuntimeError(f"/qr returned unsupported content-type={ct}, first_bytes={head!r}")
 
-
-
     def iter_servers(self):
         data = self.get_servers()
         return data.get("servers", []) if isinstance(data, dict) else []
@@ -185,4 +183,11 @@ class PanelClient:
                     return {"server": s, "client": c}
         return None
 
+    def delete_client(self, client_id: int) -> dict:
+        url = f"{self.base_url}/api/clients/{client_id}/delete"
+        print(f"Deleting client in panel: client_id={client_id} url={url}")
+        r = requests.delete(url, headers=self._headers(), timeout=self.timeout)
+        r.raise_for_status()
+        # по API обычно json
+        return r.json() if "application/json" in (r.headers.get("Content-Type") or "") else {"raw": r.text}
 
