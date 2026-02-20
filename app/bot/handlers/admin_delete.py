@@ -49,10 +49,11 @@ async def delete_user_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if prof and prof.get("client_id"):
         client_id = int(prof["client_id"])
         try:
-            resp = panel.delete_client(client_id)
-            await update.message.reply_text(f"🧹 Panel delete OK: client_id={client_id} resp={resp}")
+            resp = panel.revoke_client(client_id)
+            await update.message.reply_text(f"🧹 Panel revoke OK: client_id={client_id} resp={resp}")
         except Exception as e:
-            await update.message.reply_text(f"⚠️ Panel delete FAILED: client_id={client_id} err={type(e).__name__}: {e}")
+            await update.message.reply_text(f"⚠️ Panel revoke FAILED: client_id={client_id} err={type(e).__name__}: {e}\n"
+                                            "Отмена удаления в боте.")
 
     # 2) удалить в БД бота (каскад подчистит связи)
     deleted = delete_user(tg_id)

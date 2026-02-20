@@ -184,10 +184,57 @@ class PanelClient:
         return None
 
     def delete_client(self, client_id: int) -> dict:
-        url = f"{self.base_url}/api/clients/{client_id}/delete"
-        print(f"Deleting client in panel: client_id={client_id} url={url}")
-        r = requests.delete(url, headers=self._headers(), timeout=self.timeout)
+        candidates = [
+            ("DELETE", f"{self.base_url}/api/clients/{client_id}/delete"),
+            ("DELETE", f"{self.base_url}/api/clients/{client_id}"),
+            ("POST",   f"{self.base_url}/api/clients/{client_id}/delete"),
+            ("POST",   f"{self.base_url}/api/clients/{client_id}/remove"),
+            ("POST",   f"{self.base_url}/api/clients/delete", {"id": client_id}),
+            ("POST",   f"{self.base_url}/api/clients/remove", {"id": client_id}),
+        ]
+
+        last = None
+        for method, url, *rest in candidates:
+            json_body = rest[0] if rest else None
+            print(f"Trying panel delete: {method} {url} body={json_body}")
+
+            r = requests.request(
+                method,
+                url,
+                json=json_body,
+                headers=self._headers(),
+                timeout=self.timeout,
+            )
+
+            if r.status_code == 404:
+                last = f"404 {method} {url}"
+                continue
+
+            r.raise_for_status()
+            ct = (r.headers.get("Content-Type") or "").lower()
+            return r.json() if "application/json" in ct else {"raw": r.text, "status": r.status_code}
+
+        raise requests.HTTPError(f"All delete endpoints returned 404. Last={last}")
+
+    def revoke_client(self, client_id: int) -> dict:
+        url = f"{self.base_url}/api/clients/{client_id}/revoke"
+        print(f"Revoking client in panel: client_id={client_id} url={url}")
+        r = requests.post(url, headers=self._headers(), timeout=self.timeout)
         r.raise_for_status()
-        # по API обычно json
-        return r.json() if "application/json" in (r.headers.get("Content-Type") or "") else {"raw": r.text}
+        ct = (r.headers.get("Content-Type") or "").lower()
+        return r.json() if "application/json" in ct else {"raw": r.text, "status": r.status_code}
+
+    def get_client_details(self, client_id: int) -> dict:
+        url = f"{self.base_url}/api/clients/{client_id}/details"
+        print(f"Requesting client details client_id={client_id} url={url}")
+        r = requests.get(url, headers=self._headers(), timeout=self.timeout)
+        r.raise_for_status()
+        return r.json()
+
+    def get_client_metrics(self, client_id: int) -> dict:
+        url = f"{self.base_url}/api/clients/{client_id}/metrics"
+        print(f"Requesting client metrics client_id={client_id} url={url}")
+        r = requests.get(url, headers=self._headers(), timeout=self.timeout)
+        r.raise_for_status()
+        return r.json()
 

@@ -46,7 +46,7 @@ async def invite_create(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "✅ Admin-invite создан.\n"
         f"⏳ TTL: {cfg.INVITE_TTL_DAYS} дней\n"
         f"🔗 {link}\n"
-        "⚠️ Активация потребует approve."
+        "⚠️ Активация потребует подтверждения и может занять какое-то время."
     )
 
 @tg_error_guard
@@ -119,7 +119,9 @@ async def start_payload(update: Update, context: ContextTypes.DEFAULT_TYPE):
         upsert_relationship(me.id, int(owner))
         mark_invite_used(code, me.id)
 
-        await update.message.reply_text("✅ Гостевой доступ активирован. Теперь можно /request и /status.")
+        await update.message.reply_text("✅ Гостевой доступ активирован. Теперь ты INVITED_GUEST.\n"
+                                        "Используй /request для получения ключа для себя.\n"
+                                        "Или /help для получения инструкций по настройке VPN-клиента.")
         return
 
     await update.message.reply_text("❌ Неизвестный формат инвайта.")
@@ -129,9 +131,6 @@ async def start_payload(update: Update, context: ContextTypes.DEFAULT_TYPE):
 @with_role
 @require_roles(Role.ADMIN, Role.MODERATOR)
 async def approve_activation_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    '''if not context.args:
-        await update.message.reply_text("Формат: /approve_activation <id>")
-        return'''
     #req_id = int(context.args[0])
     raw = (update.message.text or "").strip()
     # поддержка /approve_activation_123 и /approve_activation 123
@@ -159,7 +158,10 @@ async def approve_activation_cmd(update: Update, context: ContextTypes.DEFAULT_T
 
     # уведомим пользователя
     try:
-        await context.bot.send_message(chat_id=int(req["tg_id"]), text="✅ Доступ одобрен. Теперь ты BILLING_MEMBER.")
+        await context.bot.send_message(chat_id=int(req["tg_id"]), text="✅ Доступ одобрен. Теперь ты BILLING_MEMBER.\n"
+                                       "Используй /request для получения ключа для себя.\n"
+                                       "Или /request_for для создания гостевого инвайта для другого пользователя.\n"
+                                       "Или /help для получения инструкций по настройке VPN-клиента.")
     except Exception:
         pass
 
@@ -170,10 +172,6 @@ async def approve_activation_cmd(update: Update, context: ContextTypes.DEFAULT_T
 @with_role
 @require_roles(Role.ADMIN, Role.MODERATOR)
 async def reject_activation_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    '''if not context.args:
-        await update.message.reply_text("Формат: /reject_activation <id>")
-        return'''
-    #req_id = int(context.args[0])
     raw = (update.message.text or "").strip()
     if raw.startswith("/reject_activation_"):
         req_id = int(raw.split("_", 2)[2])
@@ -226,5 +224,7 @@ async def request_for_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "✅ Гостевой инвайт создан.\n"
         f"⏳ TTL: {cfg.INVITE_TTL_DAYS} дней\n"
         f"🔗 {link}\n"
-        "После активации пользователь получит роль INVITED_GUEST."
+        "⚠️ Поделись этой ссылкой с пользователем, которому хочешь предоставить доступ к VPN в течение 7 дней, потом ссылка станет недействительной.\n"
+        "⚠️ Для активации, приглашенному пользователю необходимо пройти по ссылке и выполнить команду /request для получения ключа.\n"
+        "⚠️ Для помощи в настройке VPN-клиента, выполните команду /help."      
     )

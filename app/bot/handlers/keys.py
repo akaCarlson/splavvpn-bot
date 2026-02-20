@@ -1,4 +1,5 @@
 import html
+from multiprocessing import context
 import qrcode
 
 
@@ -89,6 +90,7 @@ async def request_cmd(update, context):
 @with_role
 @require_roles(Role.ADMIN, Role.MODERATOR, Role.CHAT_MEMBER, Role.BILLING_MEMBER, Role.INVITED_GUEST)
 async def request_text_cmd(update, context):
+    await update.message.reply_text("⏳ Генерирую ключ...")
     name, cfg_text = await _ensure_and_get_config(update, context)
     safe = html.escape(cfg_text)
     await update.message.reply_text(
@@ -107,6 +109,7 @@ async def request_text_cmd(update, context):
 @with_role
 @require_roles(Role.ADMIN, Role.MODERATOR, Role.CHAT_MEMBER, Role.BILLING_MEMBER, Role.INVITED_GUEST)
 async def request_config_cmd(update, context):
+    await update.message.reply_text("⏳ Генерирую ключ...")
     name, cfg_text = await _ensure_and_get_config(update, context)
     bio = BytesIO(cfg_text.encode("utf-8"))
     bio.name = f"{name}.conf"
@@ -122,6 +125,7 @@ async def request_config_cmd(update, context):
 @with_role
 @require_roles(Role.ADMIN, Role.MODERATOR, Role.CHAT_MEMBER, Role.BILLING_MEMBER, Role.INVITED_GUEST)
 async def request_qr_cmd(update, context):
+    await update.message.reply_text("⏳ Генерирую ключ...")
     # гарантируем, что профиль есть (создастся при необходимости)
     name, _cfg_text = await _ensure_and_get_config(update, context)
 

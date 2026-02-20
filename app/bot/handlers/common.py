@@ -2,26 +2,12 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from app.bot.middleware import require_roles, tg_error_guard, private_only, with_role, Role
+from app.db.repo_profiles import get_profile
+from app.db.repo_billing import is_billing_member
+from app.db.repo_relationships import get_owner_for_guest
+from app.services.access import Role, is_chat_member
 
-'''@tg_error_guard
-@private_only
-@with_role
-@require_roles(Role.ADMIN, Role.MODERATOR, Role.CHAT_MEMBER, Role.BILLING_MEMBER, Role.INVITED_GUEST)
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """role = context.user_data["role"]
-    if role == Role.NO_ACCESS:
-        await update.message.reply_text("Нет доступа. Нужно быть в клубном чате или получить инвайт.")
-        return"""
 
-    await update.message.reply_text(
-        "Команды:\n"
-        "/servers — список VPN-серверов\n"
-        "/request — получить ключ (конфиг) для себя\n"
-        "/health — проверить статус панели\n"
-        "/status — статус своего клиента и сервера\n"
-        "/my_id — узнать свой Telegram ID и username\n"
-    )
-'''
 @tg_error_guard
 @private_only
 @with_role
@@ -72,26 +58,82 @@ async def my_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
 @tg_error_guard
 @private_only
 @with_role
-@require_roles(Role.ADMIN, Role.MODERATOR, Role.CHAT_MEMBER, Role.BILLING_MEMBER, Role.INVITED_GUEST)
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    role = context.user_data["role"]
-    if role == Role.NO_ACCESS:
-        await update.message.reply_text("Нет доступа. Нужно быть в клубном чате или получить инвайт.")
-        return
-    
+    cfg = context.application.bot_data["cfg"]
     panel = context.application.bot_data["panel"]
-    tg_id = update.effective_user.id
-    tg_username = update.effective_user.username or "no_username"
-    name = f"tg_{tg_id}_{tg_username}"
 
-    found = panel.find_client_by_name_any_server(name)
-    if not found:
-        await update.message.reply_text("Клиент ещё не создан. Используй /request.")
+    u = update.effective_user
+    tg_id = u.id
+    username = u.username or "-"
+    role = context.user_data.get("role", Role.NO_ACCESS)
+
+    # статус в боте
+    chat_member = await is_chat_member(context, cfg.ACCESS_CHAT_ID, tg_id)
+    billing = is_billing_member(tg_id)
+    owner = get_owner_for_guest(tg_id)  # int|None
+
+    # профиль (маппинг к панели)
+    prof = get_profile(tg_id)
+
+    lines = []
+    lines.append(f"tg_id: {tg_id}")
+    lines.append(f"username: @{username}" if username != "-" else "username: -")
+    lines.append(f"role: {role}")
+
+    # bot-side status
+    lines.append("bot:")
+    lines.append(f"  chat_member: {'YES' if chat_member else 'NO'}")
+    lines.append(f"  billing_member: {'YES' if billing else 'NO'}")
+    if owner:
+        lines.append(f"  invited_guest_owner_tg_id: {owner}")
+
+    # panel-side status
+    lines.append("panel:")
+    if not prof or not prof.get("client_id"):
+        lines.append("panel:")
+        lines.append("  profile: NONE")
+        lines.append("")
+        lines.append("👉 Чтобы получить ключ: /request")
+        await update.message.reply_text("\n".join(lines))
         return
 
-    s = found["server"]
-    c = found["client"]
-    await update.message.reply_text(
-        f"server: id={s.get('id')} name={s.get('name')} host={s.get('host')} status={s.get('status')}\n"
-        f"client: id={c.get('id')} name={c.get('name')}"
-    )
+
+    client_id = int(prof["client_id"])
+    server_id = prof.get("server_id")
+    lines.append(f"  profile: server_id={server_id} client_id={client_id} name={prof.get('name')}")
+
+    # детали клиента
+    try:
+        details = panel.get_client_details(client_id)
+        client = details.get("client", {}) if isinstance(details, dict) else {}
+        lines.append(f"  status: {client.get('status', '-')}")
+        if client.get("expires_at"):
+            lines.append(f"  expires_at: {client.get('expires_at')}")
+        if client.get("traffic_limit"):
+            lines.append(f"  traffic_limit: {client.get('traffic_limit')}")
+    except Exception as e:
+        lines.append(f"  details: ERROR {type(e).__name__}: {e}")
+
+    # метрики (sent/receive)
+    def _fmt_bytes(n):
+        try:
+            n = int(n)
+        except Exception:
+            return "-"
+        for unit in ("B", "KB", "MB", "GB", "TB"):
+            if n < 1024:
+                return f"{n} {unit}"
+            n //= 1024
+        return f"{n} PB"
+
+    try:
+        m = panel.get_client_metrics(client_id)
+        # формат может отличаться, поэтому достаём гибко
+        sent = m.get("sent") or (m.get("metrics") or {}).get("sent")
+        recv = m.get("received") or m.get("recv") or (m.get("metrics") or {}).get("received")
+        lines.append(f"  sent: {_fmt_bytes(sent)}")
+        lines.append(f"  received: {_fmt_bytes(recv)}")
+    except Exception as e:
+        lines.append(f"  metrics: ERROR {type(e).__name__}: {e}")
+
+    await update.message.reply_text("\n".join(lines))
