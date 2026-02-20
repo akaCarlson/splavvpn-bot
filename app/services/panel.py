@@ -1,5 +1,6 @@
 import time
 import requests
+import base64
 
 class PanelClient:
     def __init__(self, base_url: str, email: str, password: str, timeout: int = 20):
@@ -111,6 +112,55 @@ class PanelClient:
         except Exception as e:
             result["error"] = f"{type(e).__name__}: {e}"
             return result
+
+    def get_client_qr_png(self, client_id: int) -> bytes:
+        url = f"{self.base_url}/api/clients/{client_id}/qr"
+        print(f"Requesting client QR for client_id={client_id} with url={url}")
+
+        r = requests.get(url, headers=self._headers(), timeout=self.timeout)
+        r.raise_for_status()
+
+        ct = (r.headers.get("Content-Type") or "").lower()
+        body = r.content
+
+        # 1) Прямой PNG
+        if "image/png" in ct and body.startswith(b"\x89PNG\r\n\x1a\n"):
+            return body
+
+        # 2) JSON (часто: {"qr": "data:image/png;base64,..."} или {"qr_code": "..."} )
+        if "application/json" in ct or body.lstrip().startswith(b"{"):
+            j = r.json()
+            # попробуем найти строку с base64
+            candidates = []
+            for k, v in j.items():
+                if isinstance(v, str):
+                    candidates.append(v)
+
+            for s in candidates:
+                if s.startswith("data:image/png;base64,"):
+                    b64 = s.split(",", 1)[1]
+                    raw = base64.b64decode(b64)
+                    if raw.startswith(b"\x89PNG\r\n\x1a\n"):
+                        return raw
+                # чистая base64 без data-uri
+                try:
+                    raw = base64.b64decode(s, validate=True)
+                    if raw.startswith(b"\x89PNG\r\n\x1a\n"):
+                        return raw
+                except Exception:
+                    pass
+
+            raise RuntimeError(f"/qr returned JSON but no PNG found. keys={list(j.keys())}")
+
+        # 3) Если панель отдаёт SVG — пока не конвертим, сообщаем
+        if "image/svg" in ct or body.lstrip().startswith(b"<svg"):
+            raise RuntimeError("Panel returned SVG QR. Need SVG->PNG conversion (cairosvg) or send as document.")
+
+        # 4) Любой другой ответ (HTML error и т.п.)
+        head = body[:200]
+        raise RuntimeError(f"/qr returned unsupported content-type={ct}, first_bytes={head!r}")
+
+
 
     def iter_servers(self):
         data = self.get_servers()
