@@ -1,16 +1,20 @@
 from dataclasses import dataclass
-from typing import Callable, Iterable
-from telegram.ext import Application, BaseHandler
-
 from app.services.access import Role
 
 @dataclass(frozen=True)
 class CommandSpec:
-    # то, что показываем пользователю
-    name: str                 # например "request" или "request_qr"
+    name: str
     description: str
-    visible_roles: set[Role]  # кто видит в /start
-    # регистрация хендлера делается в router, тут просто "мета"
+    visible_roles: set[Role]
+    show_in_menu: bool = True  # можно скрыть из /start, но команда остаётся рабочей
+
+@dataclass(frozen=True)
+class SectionSpec:
+    title: str
+    visible_roles: set[Role]          # кто вообще видит раздел
+    commands: list[CommandSpec]
+    placeholder: str | None = None    # текст, если команд пока нет
+    emoji: str = "⬇️"
 
 def role_allows(role: Role, allowed: set[Role]) -> bool:
     # ADMIN видит всё
@@ -18,12 +22,38 @@ def role_allows(role: Role, allowed: set[Role]) -> bool:
         return True
     return role in allowed
 
-def build_start_menu(role: Role, commands: list[CommandSpec]) -> str:
-    visible = [c for c in commands if role_allows(role, c.visible_roles)]
-    if not visible:
+def _hdr(title: str, emoji: str) -> str:
+    # аккуратная линия, читается одинаково в моноширинном и обычном шрифте
+    line = "─"
+    return f"{line} <b>{title}</b> {emoji}"
+
+def build_start_menu(role: Role, sections: list[SectionSpec]) -> str:
+    lines = ["<b>Команды:</b>"]
+    any_visible = False
+
+    for sec in sections:
+        if not role_allows(role, sec.visible_roles):
+            continue
+
+        visible_cmds = [
+            c for c in sec.commands
+            if c.show_in_menu and role_allows(role, c.visible_roles)
+        ]
+
+        # если нет команд, но есть placeholder — всё равно показываем раздел
+        if not visible_cmds and not sec.placeholder:
+            continue
+
+        any_visible = True
+        lines.append(_hdr(sec.title, sec.emoji))
+
+        for c in visible_cmds:
+            lines.append(f"/{c.name} — {c.description}")
+
+        if not visible_cmds and sec.placeholder:
+            lines.append(sec.placeholder)
+
+    if not any_visible:
         return "Команды недоступны. Проверь доступ."
 
-    lines = ["Команды:"]
-    for c in visible:
-        lines.append(f"/{c.name} — {c.description}")
     return "\n".join(lines)

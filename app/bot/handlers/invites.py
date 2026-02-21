@@ -5,8 +5,8 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from app.bot.middleware import tg_error_guard, private_only, with_role, require_roles
-from app.bot.command_registry import COMMAND_SPECS
 from app.bot.commands import build_start_menu
+from app.bot.command_registry import MENU_SECTIONS
 from app.services.access import Role
 from app.db.repo_users import upsert_user
 from app.db.repo_invites import create_invite, get_invite, mark_invite_used, expire_invites
@@ -61,7 +61,7 @@ async def start_payload(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if not context.args:
         role = context.user_data.get("role", Role.NO_ACCESS)
-        await update.message.reply_text(build_start_menu(role, COMMAND_SPECS))
+        await update.message.reply_text(build_start_menu(role, MENU_SECTIONS), parse_mode="HTML")
         return
 
     token = context.args[0].strip()
