@@ -5,7 +5,8 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from app.bot.middleware import tg_error_guard, private_only, with_role, require_roles
-
+from app.bot.command_registry import COMMAND_SPECS
+from app.bot.commands import build_start_menu
 from app.services.access import Role
 from app.db.repo_users import upsert_user
 from app.db.repo_invites import create_invite, get_invite, mark_invite_used, expire_invites
@@ -53,14 +54,14 @@ async def invite_create(update: Update, context: ContextTypes.DEFAULT_TYPE):
 @private_only
 @with_role
 async def start_payload(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    from app.bot.router import START_MENU
     expire_invites()
     
     me = update.effective_user
     upsert_user(me.id, me.username)
 
     if not context.args:
-        await update.message.reply_text(START_MENU)
+        role = context.user_data.get("role", Role.NO_ACCESS)
+        await update.message.reply_text(build_start_menu(role, COMMAND_SPECS))
         return
 
     token = context.args[0].strip()

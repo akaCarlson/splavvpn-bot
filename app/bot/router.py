@@ -1,6 +1,5 @@
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
-import app
 from app.bot.handlers.common import  health, my_id, status
 from app.bot.handlers.servers import servers
 from app.bot.handlers.admin_delete import delete_user_cmd
@@ -18,19 +17,6 @@ from app.bot.handlers.invites import (
     request_for_cmd
 )
 
-START_MENU = (
-    "Команды:\n"
-            "/request — получить ключ (конфиг) для себя\n" \
-            "/request_for — создать гостевой инвайт для другого пользователя\n"
-            "/servers — список VPN-серверов\n"
-            "/status — статус своего клиента и сервера\n"
-            "/invite_create - создаёт инвайт-ссылку для вступления в клубной чат (служебное)\n"
-            "/approve_activation - одобрить заявку на доступ (служебное)\n"
-            "/reject_activation - отклонить заявку на доступ (служебное)\n"
-            "/health — проверить статус панели (служебное)\n"
-            "/my_id — узнать свой Telegram ID и username (служебное)\n"
-            "/delete_<username> — удалить пользователя из БД бота (служебное)\n"
-)
 
 def register_handlers(app: Application) -> None:
     app.add_handler(CommandHandler("start", start_payload))
