@@ -43,6 +43,7 @@ MENU_SECTIONS = [
             CommandSpec("status", "мой статус (бот + панель)", LEGIT),
             CommandSpec("help", "справка", LEGIT | {Role.NO_ACCESS}),
             CommandSpec("health", "проверка панели (служебное)", ADMINS),
+            
         ],
     ),
     SectionSpec(

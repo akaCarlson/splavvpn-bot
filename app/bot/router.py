@@ -16,7 +16,15 @@ from app.bot.handlers.invites import (
     reject_activation_cmd,
     request_for_cmd
 )
-
+from app.bot.handlers.help import (
+    help_cmd, 
+    help_android, 
+    help_iphone, 
+    help_windows, 
+    help_macos,
+    help_bot,
+    help_billing
+)
 
 def register_handlers(app: Application) -> None:
     app.add_handler(CommandHandler("start", start_payload))
@@ -33,4 +41,12 @@ def register_handlers(app: Application) -> None:
     app.add_handler(MessageHandler(filters.Regex(r"^/approve_activation_\d+$"), approve_activation_cmd))
     app.add_handler(MessageHandler(filters.Regex(r"^/reject_activation_\d+$"), reject_activation_cmd))
     app.add_handler(MessageHandler(filters.Regex(r"^/delete_\d+$"), delete_user_cmd))
+    app.add_handler(CommandHandler("help", help_cmd))
+    app.add_handler(CommandHandler("help_android", help_android))
+    app.add_handler(CommandHandler("help_iphone", help_iphone))
+    app.add_handler(CommandHandler("help_windows", help_windows))
+    app.add_handler(CommandHandler("help_macos", help_macos))
+    app.add_handler(CommandHandler("help_bot", help_bot))
+    app.add_handler(CommandHandler("help_billing", help_billing))
+
 
