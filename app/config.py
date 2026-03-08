@@ -15,6 +15,7 @@ class Config:
     ACCESS_CHAT_ID: int
     ADMIN_TG_IDS: set[int]
     INVITE_TTL_DAYS: int
+    VPN_DISPLAY_NAME: str
 
 def load_config() -> Config:
     return Config(
@@ -25,4 +26,5 @@ def load_config() -> Config:
         ACCESS_CHAT_ID=int(os.environ["ACCESS_CHAT_ID"]),
         ADMIN_TG_IDS={int(x.strip()) for x in os.environ.get("ADMIN_TG_IDS", "").split(",") if x.strip()},
         INVITE_TTL_DAYS=int(os.environ.get("INVITE_TTL_DAYS", "7")),
+        VPN_DISPLAY_NAME=os.environ.get("VPN_DISPLAY_NAME", "Splav_US_interserver").strip(),
     )

@@ -112,9 +112,10 @@ async def request_config_cmd(update, context):
     await update.message.reply_text("⏳ Генерирую ключ...")
     name, cfg_text = await _ensure_and_get_config(update, context)
     bio = BytesIO(cfg_text.encode("utf-8"))
-    bio.name = f"{name}.conf"
+    cfg = context.application.bot_data["cfg"]
+    bio.name = f"{cfg.VPN_DISPLAY_NAME}.conf"
     bio.seek(0)
-    await update.message.reply_document(document=bio, caption="✅ Скачай и импортируй в AmneziaVPN.\n"
+    await update.message.reply_document(document=bio, caption=f"✅ Скачай и импортируй в AmneziaVPN.\n"
                                         "Или используй:\n"
                                         "/request_qr - для получения QR-кода\n"
                                         "/request_text - для получения текстового ключа\n"
