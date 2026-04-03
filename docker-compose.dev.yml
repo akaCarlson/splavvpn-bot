@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: vpn_bot
       POSTGRES_PASSWORD: vpn_bot
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - bot_db_data:/var/lib/postgresql/data
 
